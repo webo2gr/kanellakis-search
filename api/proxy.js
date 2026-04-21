@@ -51,12 +51,15 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
   const { endpoint } = req.query;
   if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
+
   const extraParams = { ...req.query };
   delete extraParams.endpoint;
   const magentoUrl = new URL(CONFIG.url + '/rest/V1/' + endpoint);
   Object.entries(extraParams).forEach(([k, v]) => magentoUrl.searchParams.set(k, v));
+
   try {
     const auth = oauthHeader('GET', magentoUrl.toString());
     const response = await fetch(magentoUrl.toString(), {
@@ -68,4 +71,4 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-}
+    }

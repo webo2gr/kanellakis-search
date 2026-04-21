@@ -1,6 +1,8 @@
-var APIBASE='/api/proxy';
+var APIBASE=location.origin+'/api/proxy';
 var basket=JSON.parse(localStorage.getItem('b')||'[]');
 var timer=null;
+
+
 
 
 function apiGet(ep,params){
@@ -11,7 +13,11 @@ function apiGet(ep,params){
 }
 
 
+
+
 function ss(c,t){document.getElementById('sd').className='d '+c;document.getElementById('st').textContent=t;}
+
+
 
 
 function load(q){
@@ -34,6 +40,3 @@ function load(q){
       });
     });
   } else {
-    apiGet('products',{'searchCriteria[pageSize]':'40','searchCriteria[sortOrders][0][field]':'updated_at','searchCriteria[sortOrders][0][direction]':'DESC'}).then(function(data){
-      var prods=data.items||[];
-      loadStock(prods,function(){

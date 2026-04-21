@@ -8,45 +8,109 @@ export default function handler(req, res) {
   lines.push("var basket=JSON.parse(localStorage.getItem('b')||'[]');");
   lines.push("var timer=null;");
   lines.push("var cache=[];");
+  lines.push("var cacheReady=false;");
+  lines.push("var pendingQuery=null;");
+  // Greeklish map - digraphs first
   lines.push("var GR=[['mp','\u03bc\u03c0'],['nt','\u03bd\u03c4'],['gk','\u03b3\u03ba'],['ts','\u03c4\u03c3'],['tz','\u03c4\u03b6'],['th','\u03b8'],['ps','\u03c8'],['ks','\u03be'],['ch','\u03c7'],['ou','\u03bf\u03c5'],['oi','\u03bf\u03b9'],['ei','\u03b5\u03b9'],['ai','\u03b1\u03b9'],['au','\u03b1\u03c5'],['eu','\u03b5\u03c5'],['a','\u03b1'],['b','\u03b2'],['g','\u03b3'],['d','\u03b4'],['e','\u03b5'],['z','\u03b6'],['h','\u03b7'],['u','\u03c5'],['i','\u03b9'],['k','\u03ba'],['l','\u03bb'],['m','\u03bc'],['n','\u03bd'],['x','\u03be'],['o','\u03bf'],['p','\u03c0'],['r','\u03c1'],['s','\u03c3'],['t','\u03c4'],['w','\u03c9'],['f','\u03c6'],['v','\u03b2'],['c','\u03c7'],['y','\u03c5'],['q','\u03b8'],['j','\u03b6']];");
   lines.push("function toGR(s){var r='',i=0;s=s.toLowerCase();while(i<s.length){var f=false;for(var g=0;g<GR.length;g++){var gl=GR[g][0];if(s.substr(i,gl.length)===gl){r+=GR[g][1];i+=gl.length;f=true;break;}}if(!f){r+=s[i];i++;}}return r;}");
   lines.push("function norm(s){if(!s)return '';return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}");
+  // Score: strict - each word must be a substring (not necessarily starts-with)
   lines.push("function score(p,q){");
-  lines.push("  if(!q)return 1;");
-  lines.push("  var nm=norm(p.name||''),sk=(p.sku||'').toLowerCase(),qn=norm(q),qg=norm(toGR(q));");
-  lines.push("  if(sk===q.toLowerCase()||sk===qn)return 1000;");
-  lines.push("  if(sk.indexOf(qn)===0)return 900;");
-  lines.push("  var ws=qn.split(/\\s+/).filter(function(w){return w.length>0;});");
-  lines.push("  var wg=qg.split(/\\s+/).filter(function(w){return w.length>0;});");
-  lines.push("  var aN=ws.every(function(w){return nm.indexOf(w)>=0;});");
-  lines.push("  var aG=wg.every(function(w){return nm.indexOf(w)>=0;});");
-  lines.push("  var aS=ws.every(function(w){return sk.indexOf(w)>=0;});");
-  lines.push("  if(!aN&&!aG&&!aS)return 0;");
-  lines.push("  var sc=0;");
+  lines.push("  if(!q)return 0;");
+  lines.push("  var nm=norm(p.name||''),sk=(p.sku||'').toLowerCase();");
+  lines.push("  var qn=norm(q),qg=norm(toGR(q));");
+  // SKU exact/prefix
+  lines.push("  if(sk===qn||sk.indexOf(qn)===0)return 1000;");
+  // Split into words - each word must appear as substring in name or sku
+  lines.push("  var ws=qn.split(/\s+/).filter(function(w){return w.length>1;});");
+  lines.push("  var wg=qg.split(/\s+/).filter(function(w){return w.length>1;});");
+  lines.push("  if(ws.length===0&&qn.length>0)ws=[qn];");
+  lines.push("  if(wg.length===0&&qg.length>0)wg=[qg];");
+  // Try latin words (direct match in name/sku)
+  lines.push("  var matchN=ws.every(function(w){return nm.indexOf(w)>=0||sk.indexOf(w)>=0;});");
+  // Try greeklish words
+  lines.push("  var matchG=wg.every(function(w){return nm.indexOf(w)>=0;});");
+  lines.push("  if(!matchN&&!matchG)return 0;");
+  lines.push("  var sc=matchN?50:30;");
+  // Bonus: phrase appears together
+  lines.push("  if(nm.indexOf(qn)>=0)sc+=100;");
+  lines.push("  if(nm.indexOf(qg)>=0)sc+=100;");
+  lines.push("  if(sk.indexOf(qn)>=0)sc+=80;");
+  // Bonus per word
   lines.push("  ws.forEach(function(w){if(nm.indexOf(w)>=0)sc+=10;if(sk.indexOf(w)>=0)sc+=15;});");
   lines.push("  wg.forEach(function(w){if(nm.indexOf(w)>=0)sc+=10;});");
-  lines.push("  if(nm.indexOf(qn)>=0)sc+=50;if(nm.indexOf(qg)>=0)sc+=50;if(sk.indexOf(qn)>=0)sc+=30;");
   lines.push("  return sc;");
   lines.push("}");
   lines.push("function apiFetch(ep,prm){var u=new URL(BASE);u.searchParams.set('endpoint',ep);if(prm)Object.keys(prm).forEach(function(k){u.searchParams.set(k,prm[k]);});return fetch(u.toString()).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}");
   lines.push("function ss(c,t){document.getElementById('sd').className='dot '+c;document.getElementById('st').textContent=t;}");
-  lines.push("function load(q){ss('sp','Loading...');document.getElementById('sv').innerHTML='<div class=\"sv\"><div class=\"spinner\"></div><div>Loading...</div></div>';document.getElementById('pg').innerHTML='';document.getElementById('ri').style.display='none';if(q&&q.trim()){if(cache.length>0){var q2=q.trim(),sc=[];for(var i=0;i<cache.length;i++){var s=score(cache[i],q2);if(s>0)sc.push({p:cache[i],s:s});}sc.sort(function(a,b){return b.s-a.s;});var res=sc.map(function(x){return x.p;});getStock(res.slice(0,30),function(){render(res);ss('ok',res.length+' results');var ri=document.getElementById('ri');ri.style.display=res.length?'block':'none';ri.textContent=res.length+' results for: '+q2;document.getElementById('sv').innerHTML=res.length?'':'<div class=\"sv\">No results for: '+q2+'</div>';});return;}var qg=toGR(q.trim()),ff=[apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'50'}),apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'20'})];if(qg!==q.toLowerCase())ff.push(apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+qg+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'}));Promise.allSettled(ff).then(function(rr){var seen=new Set(),prods=[];rr.forEach(function(r){if(r.status==='fulfilled'&&r.value.items)r.value.items.forEach(function(p){if(!seen.has(p.id)){seen.add(p.id);prods.push(p);}});});getStock(prods.slice(0,30),function(){render(prods);ss('ok',prods.length+' results');document.getElementById('sv').innerHTML='';});});}else{apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}).then(function(data){var prods=data.items||[];cache=prods;var tot=data.total_count||0;if(tot>200){var pgs=Math.min(Math.ceil(tot/200),15),ff2=[];for(var pg=2;pg<=pgs;pg++)ff2.push(apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[currentPage]':pg,'searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}));Promise.allSettled(ff2).then(function(rr){rr.forEach(function(r){if(r.status==='fulfilled'&&r.value.items)cache=cache.concat(r.value.items);});ss('ok','Ready - '+cache.length+' cached');});}getStock(prods.slice(0,40),function(){render(prods.slice(0,40));ss('ok','Ready - '+tot+' products');document.getElementById('sv').innerHTML='';});}).catch(function(e){ss('err','Error: '+e.message);document.getElementById('sv').innerHTML='<div class=\"sv\">Error<br><button class=\"abtn\" onclick=\"load()\">Retry</button></div>';});}}");
+  // Load all products in background silently - no display
+  lines.push("function loadCache(){");
+  lines.push("  apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[currentPage]':'1','searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}).then(function(data){");
+  lines.push("    cache=data.items||[];");
+  lines.push("    var tot=data.total_count||0;");
+  lines.push("    var pages=Math.ceil(tot/200);");
+  lines.push("    var fetches=[];");
+  lines.push("    for(var pg=2;pg<=Math.min(pages,15);pg++){");
+  lines.push("      fetches.push(apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[currentPage]':String(pg),'searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}));");
+  lines.push("    }");
+  lines.push("    if(fetches.length===0){");
+  lines.push("      cacheReady=true;ss('ok',tot+' products ready');");
+  lines.push("      if(pendingQuery!==null)doSearch(pendingQuery);");
+  lines.push("      return;");
+  lines.push("    }");
+  lines.push("    Promise.allSettled(fetches).then(function(rr){");
+  lines.push("      rr.forEach(function(r){if(r.status==='fulfilled'&&r.value.items)cache=cache.concat(r.value.items);});");
+  lines.push("      cacheReady=true;");
+  lines.push("      ss('ok',cache.length+' products ready');");
+  lines.push("      if(pendingQuery!==null)doSearch(pendingQuery);");
+  lines.push("    });");
+  lines.push("  }).catch(function(e){ss('err','Error: '+e.message);});");
+  lines.push("}");
+  // doSearch uses cache
+  lines.push("function doSearch(q){");
+  lines.push("  if(!q||!q.trim()){");
+  lines.push("    document.getElementById('pg').innerHTML='';");
+  lines.push("    document.getElementById('sv').innerHTML='';");
+  lines.push("    document.getElementById('ri').style.display='none';");
+  lines.push("    return;");
+  lines.push("  }");
+  lines.push("  if(!cacheReady){pendingQuery=q;ss('sp','Loading cache...');return;}");
+  lines.push("  pendingQuery=null;");
+  lines.push("  document.getElementById('sv').innerHTML='<div class="sv"><div class="spinner"></div><div>Searching...</div></div>';");
+  lines.push("  document.getElementById('pg').innerHTML='';");
+  lines.push("  document.getElementById('ri').style.display='none';");
+  lines.push("  var q2=q.trim();");
+  lines.push("  var sc=[];");
+  lines.push("  for(var i=0;i<cache.length;i++){var s=score(cache[i],q2);if(s>0)sc.push({p:cache[i],s:s});}");
+  lines.push("  sc.sort(function(a,b){return b.s-a.s;});");
+  lines.push("  var res=sc.map(function(x){return x.p;});");
+  lines.push("  getStock(res.slice(0,30),function(){");
+  lines.push("    render(res);");
+  lines.push("    ss('ok',res.length+' results');");
+  lines.push("    var ri=document.getElementById('ri');");
+  lines.push("    ri.style.display=res.length?'block':'none';");
+  lines.push("    ri.textContent=res.length+' results for: '+q2;");
+  lines.push("    document.getElementById('sv').innerHTML=res.length?'':'<div class="sv">No results for: '+q2+'</div>';");
+  lines.push("  });");
+  lines.push("}");
   lines.push("function getStock(prods,cb){var done=0,tot=Math.min(prods.length,30);if(!tot){cb();return;}prods.slice(0,30).forEach(function(p){if(p._q!==undefined){done++;if(done>=tot)cb();return;}apiFetch('stockItems/'+encodeURIComponent(p.sku)).then(function(s){p._q=s.qty;p._s=s.is_in_stock;}).catch(function(){p._q=null;p._s=null;}).then(function(){done++;if(done>=tot)cb();});});}");
   lines.push("function badge(p){if(p._q==null)return p._s===false?{c:'out',l:'Out of stock'}:{c:'in',l:'Available'};if(p._q<=0)return{c:'out',l:'Out of stock'};if(p._q<5)return{c:'low',l:p._q+' pcs'};return{c:'in',l:Math.floor(p._q)+' pcs'};}");
-  lines.push("function render(prods){var g=document.getElementById('pg');g.innerHTML='';prods.forEach(function(p){var inB=basket.find(function(b){return b.sku===p.sku;}),s=badge(p),c=document.createElement('div');c.className='card'+(inB?' added':'');c.dataset.sku=p.sku;c.innerHTML='<div class=\"sku\">'+p.sku+'</div><div class=\"name\">'+p.name+'</div><div class=\"cf\"><span class=\"badge '+s.c+'\">'+s.l+'</span><button class=\"abtn'+(inB?' added':'')+'\">'+(inB?'In list':'+ List')+'</button></div>';c.querySelector('.abtn').addEventListener('click',function(e){e.stopPropagation();tog(p.sku,p.name);});g.appendChild(c);});}");
-  lines.push("function tog(sku,name){var i=basket.findIndex(function(b){return b.sku===sku;});if(i>=0)basket.splice(i,1);else basket.push({sku:sku,name:name,qty:1});saveBs();ufab();var c=document.querySelector('.card[data-sku=\"'+sku+'\"]');if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'In list':'+ List';}}");
+  lines.push("function render(prods){var g=document.getElementById('pg');g.innerHTML='';prods.forEach(function(p){var inB=basket.find(function(b){return b.sku===p.sku;}),s=badge(p),c=document.createElement('div');c.className='card'+(inB?' added':'');c.dataset.sku=p.sku;c.innerHTML='<div class="sku">'+p.sku+'</div><div class="name">'+p.name+'</div><div class="cf"><span class="badge '+s.c+'">'+s.l+'</span><button class="abtn'+(inB?' added':'')+'">'+( inB?'In list':'+ List')+'</button></div>';c.querySelector('.abtn').addEventListener('click',function(e){e.stopPropagation();tog(p.sku,p.name);});g.appendChild(c);});}");
+  lines.push("function tog(sku,name){var i=basket.findIndex(function(b){return b.sku===sku;});if(i>=0)basket.splice(i,1);else basket.push({sku:sku,name:name,qty:1});saveBs();ufab();var c=document.querySelector('.card[data-sku="'+sku+'"]');if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'In list':'+ List';}}");
   lines.push("function saveBs(){localStorage.setItem('b',JSON.stringify(basket));}");
   lines.push("function ufab(){var f=document.getElementById('fab');f.classList.toggle('hidden',basket.length===0);document.getElementById('bcount').textContent=basket.length;}");
   lines.push("function openB(){rbask();document.getElementById('panel').classList.add('open');}");
   lines.push("function closeB(){document.getElementById('panel').classList.remove('open');}");
-  lines.push("function rbask(){var e=document.getElementById('pi');if(!basket.length){e.innerHTML='<div class=\"sv\" style=\"padding:30px\">List is empty</div>';return;}e.innerHTML=basket.map(function(it,i){return '<div class=\"pitem\"><div class=\"pn\"><div>'+it.name+'</div><div class=\"ps\">'+it.sku+'</div></div><div class=\"qc\"><button class=\"qb\" onclick=\"chq('+i+',-1)\">-</button><span class=\"qn\">'+it.qty+'</span><button class=\"qb\" onclick=\"chq('+i+',1)\">+</button></div><button class=\"rb\" onclick=\"ritem('+i+')\">x</button></div>';}).join('');}");
+  lines.push("function rbask(){var e=document.getElementById('pi');if(!basket.length){e.innerHTML='<div class="sv" style="padding:30px">List is empty</div>';return;}e.innerHTML=basket.map(function(it,i){return '<div class="pitem"><div class="pn"><div>'+it.name+'</div><div class="ps">'+it.sku+'</div></div><div class="qc"><button class="qb" onclick="chq('+i+',-1)">-</button><span class="qn">'+it.qty+'</span><button class="qb" onclick="chq('+i+',1)">+</button></div><button class="rb" onclick="ritem('+i+')">x</button></div>';}).join('');}");
   lines.push("function chq(i,d){basket[i].qty=Math.max(1,basket[i].qty+d);saveBs();rbask();}");
-  lines.push("function ritem(i){var sk=basket[i].sku;basket.splice(i,1);saveBs();ufab();rbask();var c=document.querySelector('.card[data-sku=\"'+sk+'\"]');if(c){c.classList.remove('added');c.querySelector('.abtn').textContent='+ List';}}");
-  lines.push("function copyL(){navigator.clipboard.writeText(basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('\\n')).then(function(){alert('Copied!');});}");
-  lines.push("function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent('Order\\n'+basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('\\n')));}");
-  lines.push("document.getElementById('si').addEventListener('input',function(e){clearTimeout(timer);timer=setTimeout(function(){load(e.target.value);},350);});");
+  lines.push("function ritem(i){var sk=basket[i].sku;basket.splice(i,1);saveBs();ufab();rbask();var c=document.querySelector('.card[data-sku="'+sk+'"]');if(c){c.classList.remove('added');c.querySelector('.abtn').textContent='+ List';}}");
+  lines.push("function copyL(){navigator.clipboard.writeText(basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('\n')).then(function(){alert('Copied!');});}");
+  lines.push("function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent('Order\n'+basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('\n')));}");
+  lines.push("document.getElementById('si').addEventListener('input',function(e){clearTimeout(timer);var q=e.target.value;if(!q.trim()){doSearch('');return;}timer=setTimeout(function(){doSearch(q);},350);});");
   lines.push("ufab();");
-  lines.push("load();");
+  // Start loading cache in background - show nothing initially
+  lines.push("ss('sp','Loading catalog...');");
+  lines.push("loadCache();");
 
   res.end(lines.join('\n'));
-}
+    }

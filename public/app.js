@@ -3,78 +3,87 @@ var basket=JSON.parse(localStorage.getItem('b')||'[]');
 var timer=null;
 var cachedProducts=[];
 
-// Greeklish to Greek map
-var GL={
-  'a':'alpha','b':'beta','g':'gamma','d':'delta','e':'epsilon',
-  'z':'zeta','h':'eta','th':'theta','i':'iota','k':'kappa',
-  'l':'lambda','m':'mu','n':'nu','x':'xi','o':'omicron',
-  'p':'pi','r':'rho','s':'sigma','t':'tau','u':'upsilon',
-  'f':'phi','c':'chi','ps':'psi','w':'omega','v':'beta',
-  'q':'theta','y':'upsilon','j':'xi'
-};
-
-var greeklishMap={
-  'a':'\u03b1','b':'\u03b2','g':'\u03b3','d':'\u03b4','e':'\u03b5',
-  'z':'\u03b6','h':'\u03b7','u':'\u03c5','i':'\u03b9','k':'\u03ba',
-  'l':'\u03bb','m':'\u03bc','n':'\u03bd','x':'\u03be','o':'\u03bf',
-  'p':'\u03c0','r':'\u03c1','s':'\u03c3','t':'\u03c4','w':'\u03c9',
-  'f':'\u03c6','v':'\u03b2','c':'\u03c7','y':'\u03c5','q':'\u03b8',
-  'j':'\u03b6','th':'\u03b8','ps':'\u03c8','ks':'\u03be','ch':'\u03c7',
-  'ou':'\u03bf\u03c5','oi':'\u03bf\u03b9','ei':'\u03b5\u03b9',
-  'ai':'\u03b1\u03b9','au':'\u03b1\u03c5','eu':'\u03b5\u03c5'
-};
+// Greeklish -> Greek map (digraphs first)
+var GR_MAP=[
+  ['mp','\u03bc\u03c0'],['nt','\u03bd\u03c4'],['gk','\u03b3\u03ba'],
+  ['ts','\u03c4\u03c3'],['tz','\u03c4\u03b6'],['th','\u03b8'],
+  ['ps','\u03c8'],['ks','\u03be'],['ch','\u03c7'],['ou','\u03bf\u03c5'],
+  ['oi','\u03bf\u03b9'],['ei','\u03b5\u03b9'],['ai','\u03b1\u03b9'],
+  ['au','\u03b1\u03c5'],['eu','\u03b5\u03c5'],
+  ['a','\u03b1'],['b','\u03b2'],['g','\u03b3'],['d','\u03b4'],
+  ['e','\u03b5'],['z','\u03b6'],['h','\u03b7'],['u','\u03c5'],
+  ['i','\u03b9'],['k','\u03ba'],['l','\u03bb'],['m','\u03bc'],
+  ['n','\u03bd'],['x','\u03be'],['o','\u03bf'],['p','\u03c0'],
+  ['r','\u03c1'],['s','\u03c3'],['t','\u03c4'],['w','\u03c9'],
+  ['f','\u03c6'],['v','\u03b2'],['c','\u03c7'],['y','\u03c5'],
+  ['q','\u03b8'],['j','\u03b6']
+];
 
 function toGreek(str){
-  str=str.toLowerCase();
-  var result='';
+  var s=str.toLowerCase();
+  var res='';
   var i=0;
-  while(i<str.length){
-    // Try 2-char combos first
-    var two=str.substr(i,2);
-    if(greeklishMap[two]){result+=greeklishMap[two];i+=2;}
-    else if(greeklishMap[str[i]]){result+=greeklishMap[str[i]];i++;}
-    else{result+=str[i];i++;}
+  while(i<s.length){
+    var found=false;
+    for(var g=0;g<GR_MAP.length;g++){
+      var gl=GR_MAP[g][0];
+      if(s.substr(i,gl.length)===gl){
+        res+=GR_MAP[g][1];
+        i+=gl.length;
+        found=true;
+        break;
+      }
+    }
+    if(!found){res+=s[i];i++;}
   }
-  return result;
+  return res;
 }
 
-function normalize(s){
+function removeAccents(s){
   if(!s)return '';
-  // Remove Greek accents
-  return s.toLowerCase()
-    .replace(/[\u0301\u0300\u0308\u0313\u0314\u0345\u0342]/g,'')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .normalize('NFC');
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 }
 
-function matches(product,query){
-  var q=query.toLowerCase().trim();
-  if(!q)return true;
+// Score how well a product matches the query (higher = better)
+function scoreMatch(p, q){
+  if(!q||!q.trim())return 1;
+  var name=removeAccents(p.name||'');
+  var sku=(p.sku||'').toLowerCase();
+  var qClean=removeAccents(q.trim());
+  var qGreek=removeAccents(toGreek(q.trim()));
   
-  var name=normalize(product.name||'');
-  var sku=(product.sku||'').toLowerCase();
-  var qNorm=normalize(q);
-  var qGreek=normalize(toGreek(q));
+  var score=0;
+  var words=qClean.split(/\s+/).filter(function(w){return w.length>0;});
+  var gwords=qGreek.split(/\s+/).filter(function(w){return w.length>0;});
   
-  // Direct match
-  if(name.indexOf(qNorm)>=0||sku.indexOf(qNorm)>=0)return true;
-  // Greeklish match
-  if(qGreek&&qGreek!==qNorm&&(name.indexOf(qGreek)>=0||sku.indexOf(qGreek)>=0))return true;
-  // Fuzzy: all words must appear
-  var words=qNorm.split(/\s+/).filter(function(w){return w.length>1;});
-  var greekWords=qGreek.split(/\s+/).filter(function(w){return w.length>1;});
-  if(words.length>1){
-    if(words.every(function(w){return name.indexOf(w)>=0||sku.indexOf(w)>=0;}))return true;
-    if(greekWords.every(function(w){return name.indexOf(w)>=0||sku.indexOf(w)>=0;}))return true;
-  }
-  // Fuzzy typo tolerance: check if query chars are mostly present
-  if(q.length>=4){
-    var target=name+' '+sku;
-    var hits=0;
-    for(var ci=0;ci<qNorm.length;ci++){if(target.indexOf(qNorm[ci])>=0)hits++;}
-    if(hits/qNorm.length>=0.8)return true;
-  }
-  return false;
+  // SKU exact match = highest priority
+  if(sku===qClean||sku===q.trim().toLowerCase())return 1000;
+  if(sku.indexOf(qClean)===0||sku.indexOf(q.trim().toLowerCase())===0)return 900;
+  
+  // All words must be present (AND logic - not fuzzy)
+  var allInName=words.every(function(w){return name.indexOf(w)>=0;});
+  var allInNameG=gwords.every(function(w){return name.indexOf(w)>=0;});
+  var allInSku=words.every(function(w){return sku.indexOf(w)>=0;});
+  
+  if(!allInName&&!allInNameG&&!allInSku)return 0; // NO MATCH
+  
+  // Count matching words for score
+  words.forEach(function(w){
+    if(name.indexOf(w)>=0)score+=10;
+    if(sku.indexOf(w)>=0)score+=15;
+    // Bonus for word at start
+    if(name.indexOf(' '+w)>=0||name.indexOf(w)===0)score+=5;
+  });
+  gwords.forEach(function(w){
+    if(name.indexOf(w)>=0)score+=10;
+  });
+  
+  // Bonus: query appears as continuous phrase
+  if(name.indexOf(qClean)>=0)score+=50;
+  if(name.indexOf(qGreek)>=0)score+=50;
+  if(sku.indexOf(qClean)>=0)score+=30;
+  
+  return score;
 }
 
 function apiFetch(ep,params){
@@ -93,50 +102,72 @@ function load(q){
   setStatus('spin','Loading...');
   document.getElementById('sv').innerHTML='<div class="sv"><div class="sp"></div><div>Loading...</div></div>';
   document.getElementById('pg').innerHTML='';
-  
-  // If we have cached products, filter locally first (instant!)
-  if(cachedProducts.length>0&&q&&q.trim()){
-    var filtered=cachedProducts.filter(function(p){return matches(p,q);});
-    renderCards(filtered);
-    setStatus('ok',filtered.length+' results');
-    document.getElementById('ri').style.display=filtered.length?'block':'none';
-    document.getElementById('ri').textContent=filtered.length+' results for: '+q;
-    if(!filtered.length)document.getElementById('sv').innerHTML='<div class="sv">No results for: '+q+'</div>';
-    else document.getElementById('sv').innerHTML='';
-    return;
-  }
+  document.getElementById('ri').style.display='none';
 
   if(q&&q.trim()){
-    var qGreek=toGreek(q);
+    // Search from cache (instant, with strict AND scoring)
+    if(cachedProducts.length>0){
+      var q2=q.trim();
+      var scored=[];
+      for(var i=0;i<cachedProducts.length;i++){
+        var s=scoreMatch(cachedProducts[i],q2);
+        if(s>0)scored.push({p:cachedProducts[i],s:s});
+      }
+      scored.sort(function(a,b){return b.s-a.s;});
+      var results=scored.map(function(x){return x.p;});
+      
+      getStock(results.slice(0,30),function(){
+        renderCards(results);
+        setStatus('ok',results.length+' results');
+        document.getElementById('ri').style.display=results.length?'block':'none';
+        document.getElementById('ri').textContent=results.length+' results for: '+q2;
+        if(!results.length)document.getElementById('sv').innerHTML='<div class="sv">No results for: '+q2+'</div>';
+        else document.getElementById('sv').innerHTML='';
+      });
+      return;
+    }
+    // No cache yet - fetch from API
+    var qGreek=toGreek(q.trim());
     var searches=[
-      apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'}),
-      apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'10'})
+      apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'50'}),
+      apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'20'})
     ];
-    if(qGreek!==q){
-      searches.push(apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+qGreek+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'20'}));
+    if(qGreek!==q.toLowerCase()){
+      searches.push(apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+qGreek+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'}));
     }
     Promise.allSettled(searches).then(function(res){
       var seen=new Set(),prods=[];
       res.forEach(function(r){if(r.status==='fulfilled'&&r.value.items){r.value.items.forEach(function(p){if(!seen.has(p.id)){seen.add(p.id);prods.push(p);}});}});
-      // Also filter from cache if available
-      getStock(prods,function(){
+      getStock(prods.slice(0,30),function(){
         renderCards(prods);
         setStatus('ok',prods.length+' results');
         document.getElementById('ri').style.display=prods.length?'block':'none';
-        document.getElementById('ri').textContent=prods.length+' results for: '+q+(qGreek!==q?' ('+qGreek+')':'');
+        document.getElementById('ri').textContent=prods.length+' results for: '+q;
         if(!prods.length)document.getElementById('sv').innerHTML='<div class="sv">No results</div>';
         else document.getElementById('sv').innerHTML='';
       });
     });
   } else {
-    // Load all products and cache them
+    // Load all and cache
     apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}).then(function(data){
       var prods=data.items||[];
       cachedProducts=prods;
+      var total=data.total_count||0;
+      // Load more pages if needed
+      if(total>200){
+        var pages=Math.ceil(total/200);
+        var fetches=[];
+        for(var pg=2;pg<=Math.min(pages,15);pg++){
+          fetches.push(apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[currentPage]':pg,'searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}));
+        }
+        Promise.allSettled(fetches).then(function(res){
+          res.forEach(function(r){if(r.status==='fulfilled'&&r.value.items){cachedProducts=cachedProducts.concat(r.value.items);}});
+          setStatus('ok','Ready - '+cachedProducts.length+' products cached');
+        });
+      }
       getStock(prods.slice(0,40),function(){
         renderCards(prods.slice(0,40));
-        setStatus('ok','Ready - '+(data.total_count||0)+' products cached');
-        document.getElementById('ri').style.display='none';
+        setStatus('ok','Ready - '+total+' products');
         document.getElementById('sv').innerHTML='';
       });
     }).catch(function(e){
@@ -150,6 +181,7 @@ function getStock(prods,cb){
   var done=0,total=Math.min(prods.length,30);
   if(!total){cb();return;}
   prods.slice(0,30).forEach(function(p){
+    if(p._q!==undefined){done++;if(done>=total)cb();return;}
     apiFetch('stockItems/'+encodeURIComponent(p.sku))
       .then(function(s){p._q=s.qty;p._s=s.is_in_stock;})
       .catch(function(){p._q=null;p._s=null;})
@@ -230,8 +262,7 @@ function sendWA(){
 document.getElementById('si').addEventListener('input',function(e){
   clearTimeout(timer);
   var q=e.target.value;
-  if(q.length===0){timer=setTimeout(function(){load('');},300);return;}
-  timer=setTimeout(function(){load(q);},400);
+  timer=setTimeout(function(){load(q);},350);
 });
 
 updateFab();

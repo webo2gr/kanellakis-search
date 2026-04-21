@@ -83,7 +83,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-var PR='/api/proxy',basket=JSON.parse(localStorage.getItem('b')||'[]'),st=null;
+var PR='https://kanellakis-search-6bgfmfn6b-webo2grs-projects.vercel.app/api/proxy',basket=JSON.parse(localStorage.getItem('b')||'[]'),st=null;
 async function af(ep,p){var u=new URL(PR,location.origin);u.searchParams.set('endpoint',ep);Object.entries(p||{}).forEach(function(kv){u.searchParams.set(kv[0],kv[1]);});var r=await fetch(u.toString());if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
 function ss(c,t){document.getElementById('sd').className='dot '+c;document.getElementById('st').textContent=t;}
 async function load(q){

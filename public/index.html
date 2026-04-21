@@ -4,33 +4,142 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanellakis Search</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-:root{--bg:#f5f4f0;--surface:#fff;--border:#e0ddd8;--text:#1a1917;--muted:#6b6860;--accent:#c8390a;--green:#1a7a4a;--gl:#edf7f2;--yellow:#b45309;--yl:#fef9ee;--rl:#fdf1ee;--r:8px}
+:root{--bg:#f5f4f0;--sur:#fff;--bdr:#e0ddd8;--txt:#1a1917;--mut:#6b6860;--acc:#c8390a;--grn:#1a7a4a;--gl:#edf7f2;--ylw:#b45309;--yl:#fef9ee;--rl:#fdf1ee;--r:8px}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-header{background:var(--text);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-.logo{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;white-space:nowrap}
-.logo span{color:var(--accent)}
-.sw{flex:1;max-width:500px;margin:0 auto;position:relative}
-#si{width:100%;padding:10px 16px 10px 40px;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:15px;background:rgba(255,255,255,.15);color:#fff;outline:none}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+header{background:var(--txt);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.logo{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:14px;white-space:nowrap}.logo span{color:var(--acc)}
+.sw{flex:1;position:relative}
+#si{width:100%;padding:9px 14px 9px 36px;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:15px;background:rgba(255,255,255,.15);color:#fff;outline:none}
 #si::placeholder{color:rgba(255,255,255,.5)}
-.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
-.cnt{padding:16px}
-.sb{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;font-size:13px;color:var(--muted)}
-.d{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
-.d.ok{background:var(--green)}.d.err{background:var(--accent)}.d.spin{background:var(--yellow);animation:p 1s infinite}
+.sico{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5}
+.cnt{padding:12px}
+.sb{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:12px;font-size:13px;color:var(--mut)}
+.dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}.dot.ok{background:var(--grn)}.dot.err{background:var(--acc)}.dot.sp{background:var(--ylw);animation:p 1s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
-.ri{font-size:12px;color:var(--muted);margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:transform .15s}
-.card:hover{transform:translateY(-1px)}.card.added{border-color:var(--green);background:var(--gl)}
-.sku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
-.name{font-size:14px;font-weight:500;line-height:1.4;margin-bottom:10px}
+.ri{font-size:12px;color:var(--mut);margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{background:var(--sur);border:1.5px solid var(--bdr);border-radius:var(--r);padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);transition:all .15s}
+.card:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.1)}.card.added{border-color:var(--grn);background:var(--gl)}
+.sku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut);margin-bottom:4px;text-transform:uppercase}
+.name{font-size:13px;font-weight:500;line-height:1.4;margin-bottom:10px}
 .cf{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.badge{font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
-.badge.in{background:var(--gl);color:var(--green)}.badge.low{background:var(--yl);color:var(--yellow)}.badge.out{background:var(--rl);color:var(--accent)}
-.abtn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .15s}
-.abtn:hover{background:var(--accent);color:#fff}.abtn.added{background:var(--green);border-color:var(--green);color:#fff}
-.sv{text-align:center;padding:60px 20px;color:var(--muted)}
-.sp{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 16px}
+.badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
+.badge.in{background:var(--gl);color:var(--grn)}.badge.low{background:var(--yl);color:var(--ylw)}.badge.out{background:var(--rl);color:var(--acc)}
+.abtn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--acc);background:transparent;color:var(--acc);font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .15s}
+.abtn:hover{background:var(--acc);color:#fff}.abtn.added{background:var(--grn);border-color:var(--grn);color:#fff}
+.sv{text-align:center;padding:50px 20px;color:var(--mut)}
+.spinner{width:30px;height:30px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 14px}
+@keyframes s{to{transform:rotate(360deg)}}
+.fab{position:fixed;bottom:18px;right:18px;background:var(--txt);color:#fff;border:none;border-radius:28px;padding:11px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:200}
+.fab.hidden{display:none}.bc{background:var(--acc);border-radius:12px;padding:2px 7px;font-size:12px;font-weight:700}
+.panel{position:fixed;bottom:0;right:0;left:0;background:var(--sur);border-top:2px solid var(--bdr);z-index:300;transform:translateY(100%);transition:transform .3s;max-height:72vh;overflow-y:auto;border-radius:16px 16px 0 0}
+.panel.open{transform:translateY(0)}
+.ph{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--sur)}
+.ph h2{font-size:15px;font-weight:600}.xb{background:none;border:none;font-size:22px;cursor:pointer;color:var(--mut);line-height:1}
+.pi{padding:10px 18px}
+.pitem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr)}.pitem:last-child{border-bottom:none}
+.pn{flex:1;font-size:13px}.ps{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut)}
+.qc{display:flex;align-items:center;gap:5px;background:var(--bg);border-radius:20px;padding:3px 7px}
+.qb{background:none;border:none;font-size:18px;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.qn{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;min-width:22px;text-align:center}
+.rb{background:none;border:none;color:var(--acc);cursor:pointer;font-size:15px;padding:3px}
+.pf{padding:14px 18px;border-top:1px solid var(--bdr);display:flex;gap:8px}
+.sbtn{flex:1;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.cbtn{padding:12px 14px;background:var(--bg);border:1px solid var(--bdr);border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:13px;cursor:pointer}
+@media(max-width:600px){header{flex-wrap:wrap}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Kanellakis<span>.</span></div>
+  <div class="sw">
+    <svg class="sico" width="15" height="15" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="si" placeholder="Search products..." autocomplete="off">
+  </div>
+</header>
+<div class="cnt">
+  <div class="sb"><div class="dot sp" id="sd"></div><span id="st">Connecting...</span></div>
+  <div id="ri" class="ri" style="display:none"></div>
+  <div class="grid" id="pg"></div>
+  <div id="sv"></div>
+</div>
+<button class="fab hidden" id="fab" onclick="openB()">Cart <span class="bc" id="bcount">0</span></button>
+<div class="panel" id="panel">
+  <div class="ph"><h2>Order List</h2><button class="xb" onclick="closeB()">x</button></div>
+  <div class="pi" id="pi"></div>
+  <div class="pf"><button class="cbtn" onclick="copyL()">Copy</button><button class="sbtn" onclick="sendWA()">WhatsApp</button></div>
+</div>
+<script>(function(){
+var BASE=location.origin+'/api/proxy';
+var basket=JSON.parse(localStorage.getItem('b')||'[]');
+var timer=null;
+var cache=[];
+var GR=[['mp','μπ'],['nt','ντ'],['gk','γκ'],['ts','τσ'],['tz','τζ'],['th','θ'],['ps','ψ'],['ks','ξ'],['ch','χ'],['ou','ου'],['oi','οι'],['ei','ει'],['ai','αι'],['au','αυ'],['eu','ευ'],['a','α'],['b','β'],['g','γ'],['d','δ'],['e','ε'],['z','ζ'],['h','η'],['u','υ'],['i','ι'],['k','κ'],['l','λ'],['m','μ'],['n','ν'],['x','ξ'],['o','ο'],['p','π'],['r','ρ'],['s','σ'],['t','τ'],['w','ω'],['f','φ'],['v','β'],['c','χ'],['y','υ'],['q','θ'],['j','ζ']];
+function toGR(s){var r='',i=0;s=s.toLowerCase();while(i<s.length){var f=false;for(var g=0;g<GR.length;g++){var gl=GR[g][0];if(s.substr(i,gl.length)===gl){r+=GR[g][1];i+=gl.length;f=true;break;}}if(!f){r+=s[i];i++;}}return r;}
+function norm(s){if(!s)return '';return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+function score(p,q){
+  if(!q)return 1;
+  var nm=norm(p.name||''),sk=(p.sku||'').toLowerCase(),qn=norm(q),qg=norm(toGR(q));
+  if(sk===q.toLowerCase()||sk===qn)return 1000;
+  if(sk.indexOf(qn)===0||sk.indexOf(q.toLowerCase())===0)return 900;
+  var ws=qn.split(/s+/).filter(function(w){return w.length>0;});
+  var wg=qg.split(/s+/).filter(function(w){return w.length>0;});
+  var aN=ws.every(function(w){return nm.indexOf(w)>=0;});
+  var aG=wg.every(function(w){return nm.indexOf(w)>=0;});
+  var aS=ws.every(function(w){return sk.indexOf(w)>=0;});
+  if(!aN&&!aG&&!aS)return 0;
+  var sc=0;
+  ws.forEach(function(w){if(nm.indexOf(w)>=0)sc+=10;if(sk.indexOf(w)>=0)sc+=15;});
+  wg.forEach(function(w){if(nm.indexOf(w)>=0)sc+=10;});
+  if(nm.indexOf(qn)>=0)sc+=50;if(nm.indexOf(qg)>=0)sc+=50;if(sk.indexOf(qn)>=0)sc+=30;
+  return sc;
+}
+function apiFetch(ep,prm){var u=new URL(BASE);u.searchParams.set('endpoint',ep);if(prm)Object.keys(prm).forEach(function(k){u.searchParams.set(k,prm[k]);});return fetch(u.toString()).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+function ss(c,t){document.getElementById('sd').className='dot '+c;document.getElementById('st').textContent=t;}
+function load(q){
+  ss('sp','Loading...');
+  document.getElementById('sv').innerHTML='<div class="sv"><div class="spinner"></div><div>Loading...</div></div>';
+  document.getElementById('pg').innerHTML='';document.getElementById('ri').style.display='none';
+  if(q&&q.trim()){
+    if(cache.length>0){
+      var q2=q.trim(),sc=[];
+      for(var i=0;i<cache.length;i++){var s=score(cache[i],q2);if(s>0)sc.push({p:cache[i],s:s});}
+      sc.sort(function(a,b){return b.s-a.s;});var res=sc.map(function(x){return x.p;});
+      getStock(res.slice(0,30),function(){render(res);ss('ok',res.length+' results');var ri=document.getElementById('ri');ri.style.display=res.length?'block':'none';ri.textContent=res.length+' results for: '+q2;document.getElementById('sv').innerHTML=res.length?'':'<div class="sv">No results for: '+q2+'</div>';});
+      return;
+    }
+    var qg=toGR(q.trim()),ff=[apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'50'}),apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'20'})];
+    if(qg!==q.toLowerCase())ff.push(apiFetch('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+qg+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'}));
+    Promise.allSettled(ff).then(function(rr){var seen=new Set(),prods=[];rr.forEach(function(r){if(r.status==='fulfilled'&&r.value.items)r.value.items.forEach(function(p){if(!seen.has(p.id)){seen.add(p.id);prods.push(p);}});});getStock(prods.slice(0,30),function(){render(prods);ss('ok',prods.length+' results');document.getElementById('sv').innerHTML='';});});
+  } else {
+    apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}).then(function(data){
+      var prods=data.items||[];cache=prods;var tot=data.total_count||0;
+      if(tot>200){var pgs=Math.min(Math.ceil(tot/200),15),ff2=[];for(var pg=2;pg<=pgs;pg++)ff2.push(apiFetch('products',{'searchCriteria[pageSize]':'200','searchCriteria[currentPage]':pg,'searchCriteria[sortOrders][0][field]':'name','searchCriteria[sortOrders][0][direction]':'ASC'}));Promise.allSettled(ff2).then(function(rr){rr.forEach(function(r){if(r.status==='fulfilled'&&r.value.items)cache=cache.concat(r.value.items);});ss('ok','Ready - '+cache.length+' products cached');});}
+      getStock(prods.slice(0,40),function(){render(prods.slice(0,40));ss('ok','Ready - '+tot+' products');document.getElementById('sv').innerHTML='';});
+    }).catch(function(e){ss('err','Error: '+e.message);document.getElementById('sv').innerHTML='<div class="sv">Error<br><button class="abtn" onclick="load()">Retry</button></div>';});
+  }
+}
+function getStock(prods,cb){var done=0,tot=Math.min(prods.length,30);if(!tot){cb();return;}prods.slice(0,30).forEach(function(p){if(p._q!==undefined){done++;if(done>=tot)cb();return;}apiFetch('stockItems/'+encodeURIComponent(p.sku)).then(function(s){p._q=s.qty;p._s=s.is_in_stock;}).catch(function(){p._q=null;p._s=null;}).then(function(){done++;if(done>=tot)cb();});});}
+function badge(p){if(p._q==null)return p._s===false?{c:'out',l:'Out of stock'}:{c:'in',l:'Available'};if(p._q<=0)return{c:'out',l:'Out of stock'};if(p._q<5)return{c:'low',l:p._q+' pcs'};return{c:'in',l:Math.floor(p._q)+' pcs'};}
+function render(prods){var g=document.getElementById('pg');g.innerHTML='';prods.forEach(function(p){var inB=basket.find(function(b){return b.sku===p.sku;}),s=badge(p),c=document.createElement('div');c.className='card'+(inB?' added':'');c.dataset.sku=p.sku;c.innerHTML='<div class="sku">'+p.sku+'</div><div class="name">'+p.name+'</div><div class="cf"><span class="badge '+s.c+'">'+s.l+'</span><button class="abtn'+(inB?' added':'')+'">'+(inB?'In list':'+ List')+'</button></div>';c.querySelector('.abtn').addEventListener('click',function(e){e.stopPropagation();tog(p.sku,p.name);});g.appendChild(c);});}
+function tog(sku,name){var i=basket.findIndex(function(b){return b.sku===sku;});if(i>=0)basket.splice(i,1);else basket.push({sku:sku,name:name,qty:1});saveBs();ufab();var c=document.querySelector('.card[data-sku="'+sku+'"]');if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'In list':'+ List';}}
+function saveBs(){localStorage.setItem('b',JSON.stringify(basket));}
+function ufab(){var f=document.getElementById('fab');f.classList.toggle('hidden',basket.length===0);document.getElementById('bcount').textContent=basket.length;}
+function openB(){rbask();document.getElementById('panel').classList.add('open');}
+function closeB(){document.getElementById('panel').classList.remove('open');}
+function rbask(){var e=document.getElementById('pi');if(!basket.length){e.innerHTML='<div class="sv" style="padding:30px">List is empty</div>';return;}e.innerHTML=basket.map(function(it,i){return '<div class="pitem"><div class="pn"><div>'+it.name+'</div><div class="ps">'+it.sku+'</div></div><div class="qc"><button class="qb" onclick="chq('+i+',-1)">-</button><span class="qn">'+it.qty+'</span><button class="qb" onclick="chq('+i+',1)">+</button></div><button class="rb" onclick="ritem('+i+')">x</button></div>';}).join('');}
+function chq(i,d){basket[i].qty=Math.max(1,basket[i].qty+d);saveBs();rbask();}
+function ritem(i){var sk=basket[i].sku;basket.splice(i,1);saveBs();ufab();rbask();var c=document.querySelector('.card[data-sku="'+sk+'"]');if(c){c.classList.remove('added');c.querySelector('.abtn').textContent='+ List';}}
+function copyL(){navigator.clipboard.writeText(basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('
+')).then(function(){alert('Copied!');});}
+function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent('Order
+'+basket.map(function(it){return it.qty+'x '+it.sku+' - '+it.name;}).join('
+')));}
+document.getElementById('si').addEventListener('input',function(e){clearTimeout(timer);timer=setTimeout(function(){load(e.target.value);},350);});
+ufab();load();
+})()</script>
+</body>
+</html>

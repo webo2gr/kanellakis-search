@@ -5,161 +5,179 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Αναζήτηση Προϊόντων - Κανελλάκης</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-  :root{--bg:#f5f4f0;--surface:#fff;--border:#e0ddd8;--text:#1a1917;--text-muted:#6b6860;--accent:#c8390a;--green:#1a7a4a;--green-light:#edf7f2;--yellow:#b45309;--yellow-light:#fef9ee;--red:#c8390a;--red-light:#fdf1ee;--radius:8px}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-  header{background:var(--text);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-  .logo{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;white-space:nowrap}
-  .logo span{color:var(--accent)}
-  .search-wrap{flex:1;max-width:500px;margin:0 auto;position:relative}
-  #searchInput{width:100%;padding:10px 16px 10px 40px;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:15px;background:rgba(255,255,255,.15);color:#fff;outline:none}
-  #searchInput::placeholder{color:rgba(255,255,255,.5)}
-  .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
-  .container{padding:16px;max-width:900px;margin:0 auto}
-  .status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--text-muted)}
-  .dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
-  .dot.ok{background:var(--green)}.dot.err{background:var(--red)}.dot.spin{background:var(--yellow);animation:p 1s infinite}
-  @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
-  .info{font-size:12px;color:var(--text-muted);margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:transform .15s}
-  .card:hover{transform:translateY(-1px)}
-  .card.added{border-color:var(--green);background:var(--green-light)}
-  .sku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase}
-  .name{font-size:14px;font-weight:500;line-height:1.4;margin-bottom:10px}
-  .footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .badge{font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
-  .badge.in{background:var(--green-light);color:var(--green)}.badge.low{background:var(--yellow-light);color:var(--yellow)}.badge.out{background:var(--red-light);color:var(--red)}
-  .abtn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .15s}
-  .abtn:hover{background:var(--accent);color:#fff}.abtn.added{background:var(--green);border-color:var(--green);color:#fff}
-  .sv{text-align:center;padding:60px 20px;color:var(--text-muted)}
-  .spin2{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 16px}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .fab{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;border:none;border-radius:28px;padding:12px 20px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:200}
-  .fab.hidden{display:none}
-  .cnt{background:var(--accent);border-radius:12px;padding:2px 8px;font-size:12px;font-weight:700}
-  .panel{position:fixed;bottom:0;right:0;left:0;background:var(--surface);border-top:2px solid var(--border);z-index:300;transform:translateY(100%);transition:transform .3s;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0}
-  .panel.open{transform:translateY(0)}
-  .ph{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
-  .ph h2{font-size:16px;font-weight:600}
-  .xbtn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)}
-  .pitems{padding:12px 20px}
-  .pitem{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-  .pitem:last-child{border-bottom:none}
-  .pname{flex:1;font-size:13px}
-  .psku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted)}
-  .qc{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:20px;padding:4px 8px}
-  .qbtn{background:none;border:none;font-size:18px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%}
-  .qn{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;min-width:24px;text-align:center}
-  .rbtn{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px}
-  .pf{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
-  .sbtn{flex:1;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer}
-  .cbtn{padding:13px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;cursor:pointer}
-  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .3s;z-index:400;pointer-events:none}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  @media(max-width:600px){header{flex-wrap:wrap;gap:8px}.search-wrap{max-width:100%}.grid{grid-template-columns:1fr}}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{--bg:#f5f4f0;--surface:#fff;--border:#e0ddd8;--text:#1a1917;--muted:#6b6860;--accent:#c8390a;--green:#1a7a4a;--gl:#edf7f2;--yellow:#b45309;--yl:#fef9ee;--rl:#fdf1ee;--r:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--text);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.logo{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;white-space:nowrap}
+.logo span{color:var(--accent)}
+.sw{flex:1;max-width:500px;margin:0 auto;position:relative}
+#si{width:100%;padding:10px 16px 10px 40px;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:15px;background:rgba(255,255,255,.15);color:#fff;outline:none}
+#si::placeholder{color:rgba(255,255,255,.5)}
+.si{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
+.cnt{padding:16px;max-width:900px;margin:0 auto}
+.sb{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;font-size:13px;color:var(--muted)}
+.d{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.d.ok{background:var(--green)}.d.err{background:var(--accent)}.d.spin{background:var(--yellow);animation:p 1s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.ri{font-size:12px;color:var(--muted);margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:transform .15s}
+.card:hover{transform:translateY(-1px)}.card.added{border-color:var(--green);background:var(--gl)}
+.sku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
+.name{font-size:14px;font-weight:500;line-height:1.4;margin-bottom:10px}
+.cf{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.badge{font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
+.badge.in{background:var(--gl);color:var(--green)}.badge.low{background:var(--yl);color:var(--yellow)}.badge.out{background:var(--rl);color:var(--accent)}
+.abtn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .15s}
+.abtn:hover{background:var(--accent);color:#fff}.abtn.added{background:var(--green);border-color:var(--green);color:#fff}
+.sv{text-align:center;padding:60px 20px;color:var(--muted)}
+.sp{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 16px}
+@keyframes s{to{transform:rotate(360deg)}}
+.fab{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;border:none;border-radius:28px;padding:12px 20px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:200}
+.fab.hidden{display:none}
+.bc{background:var(--accent);border-radius:12px;padding:2px 8px;font-size:12px;font-weight:700}
+.panel{position:fixed;bottom:0;right:0;left:0;background:var(--surface);border-top:2px solid var(--border);z-index:300;transform:translateY(100%);transition:transform .3s;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0}
+.panel.open{transform:translateY(0)}
+.ph{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.ph h2{font-size:16px;font-weight:600}
+.xb{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)}
+.pi{padding:12px 20px}
+.pitem{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.pitem:last-child{border-bottom:none}
+.pn{flex:1;font-size:13px}
+.ps{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+.qc{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:20px;padding:4px 8px}
+.qb{background:none;border:none;font-size:18px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.qn{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;min-width:24px;text-align:center}
+.rb{background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px;padding:4px}
+.pf{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+.sbtn{flex:1;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer}
+.cbtn{padding:13px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:14px;cursor:pointer}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .3s;z-index:400;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){header{flex-wrap:wrap}.sw{max-width:100%}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">Κανελλάκης<span>.</span></div>
-  <div class="search-wrap">
-    <svg class="search-icon" width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  <div class="sw">
+    <svg class="si" width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <input type="search" id="si" placeholder="Κωδικός, περιγραφή..." autocomplete="off">
   </div>
 </header>
-<div class="container">
-  <div class="status-bar"><div class="dot spin" id="sd"></div><span id="st">Σύνδεση...</span></div>
-  <div id="ri" class="info" style="display:none"></div>
+<div class="cnt">
+  <div class="sb"><div class="d spin" id="sd"></div><span id="st">Σύνδεση...</span></div>
+  <div id="ri" class="ri" style="display:none"></div>
   <div class="grid" id="pg"></div>
   <div id="sv"></div>
 </div>
-<button class="fab hidden" id="fab" onclick="openB()">🛒 Λίστα <span class="cnt" id="bc">0</span></button>
+<button class="fab hidden" id="fab" onclick="openB()">🛒 Λίστα <span class="bc" id="bcount">0</span></button>
 <div class="panel" id="panel">
-  <div class="ph"><h2>📋 Λίστα Παραγγελίας</h2><button class="xbtn" onclick="closeB()">×</button></div>
-  <div class="pitems" id="pi"></div>
-  <div class="pf"><button class="cbtn" onclick="copyL()">📋 Αντιγραφή</button><button class="sbtn" onclick="sendWA()">📱 WhatsApp</button></div>
+  <div class="ph"><h2>📋 Λίστα Παραγγελίας</h2><button class="xb" onclick="closeB()">x</button></div>
+  <div class="pi" id="pi"></div>
+  <div class="pf"><button class="cbtn" onclick="copyL()">Αντιγραφη</button><button class="sbtn" onclick="sendWA()">WhatsApp</button></div>
 </div>
 <div class="toast" id="toast"></div>
-<script>
-var PR='https://kanellakis-search-6bgfmfn6b-webo2grs-projects.vercel.app/api/proxy',basket=JSON.parse(localStorage.getItem('b')||'[]'),st=null;
-async function af(ep,p){var u=new URL(PR,location.origin);u.searchParams.set('endpoint',ep);Object.entries(p||{}).forEach(function(kv){u.searchParams.set(kv[0],kv[1]);});var r=await fetch(u.toString());if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
-function ss(c,t){document.getElementById('sd').className='dot '+c;document.getElementById('st').textContent=t;}
-async function load(q){
-  ss('spin','Φόρτωση...');show('loading');
-  try{
-    var prods=[];
-    if(q&&q.trim()){
-      var res=await Promise.allSettled([
-        af('products',{'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'}),
-        af('products',{'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'10'})
-      ]);
-      var seen=new Set();
-      prods=[].concat(res[0].status==='fulfilled'?res[0].value.items||[]:[],res[1].status==='fulfilled'?res[1].value.items||[]:[]).filter(function(p){if(seen.has(p.id))return false;seen.add(p.id);return true;});
-      document.getElementById('ri').style.display=prods.length?'block':'none';
-      document.getElementById('ri').textContent=prods.length+' αποτελέσματα για "'+q+'"';
-    }else{
-      var d=await af('products',{'searchCriteria[pageSize]':'40','searchCriteria[sortOrders][0][field]':'updated_at','searchCriteria[sortOrders][0][direction]':'DESC'});
-      prods=d.items||[];ss('ok','Συνδεδεμένο · '+(d.total_count||0)+' προϊόντα');
-      document.getElementById('ri').style.display='none';
-    }
-    await loadSt(prods);render(prods);
-    if(q&&q.trim())ss('ok',prods.length+' αποτελέσματα');
-    if(!prods.length)show('empty',q);else show('');
-  }catch(e){console.error(e);ss('err','Σφάλμα σύνδεσης');show('err',e.message);}
+<script type="text/javascript">
+var APIBASE = 'https://kanellakis-search-6bgfmfn6b-webo2grs-projects.vercel.app/api/proxy';
+var basket = JSON.parse(localStorage.getItem('b') || '[]');
+var searchTimer = null;
+
+function apiGet(ep, params) {
+  var url = new URL(APIBASE);
+  url.searchParams.set('endpoint', ep);
+  if (params) { Object.keys(params).forEach(function(k){ url.searchParams.set(k, params[k]); }); }
+  return fetch(url.toString()).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
 }
-async function loadSt(prods){
-  await Promise.allSettled(prods.slice(0,30).map(async function(p){
-    try{var s=await af('stockItems/'+encodeURIComponent(p.sku));p._q=s.qty;p._s=s.is_in_stock;}catch(e){p._q=null;p._s=null;}
-  }));
+
+function setStatus(cls, txt) {
+  document.getElementById('sd').className = 'd ' + cls;
+  document.getElementById('st').textContent = txt;
 }
-function si2(p){
-  if(p._q==null)return p._s===false?{c:'out',l:'Εκτός stock'}:{c:'in',l:'Διαθέσιμο'};
-  if(p._q<=0)return{c:'out',l:'Εκτός stock'};
-  if(p._q<5)return{c:'low',l:p._q+' τεμ.'};
-  return{c:'in',l:Math.floor(p._q)+' τεμ.'};
+
+function load(q) {
+  setStatus('spin', 'Φόρτωση...');
+  showState('loading');
+  var p1, p2;
+  if (q && q.trim()) {
+    p1 = apiGet('products', {'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'});
+    p2 = apiGet('products', {'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'10'});
+    Promise.allSettled([p1,p2]).then(function(results) {
+      var seen = new Set();
+      var prods = [];
+      results.forEach(function(r){ if(r.status==='fulfilled'&&r.value.items){ r.value.items.forEach(function(p){ if(!seen.has(p.id)){seen.add(p.id);prods.push(p);} }); } });
+      loadStock(prods).then(function(){ render(prods); setStatus('ok',prods.length+' αποτελέσματα'); document.getElementById('ri').style.display=prods.length?'block':'none'; document.getElementById('ri').textContent=prods.length+' αποτελέσματα για "'+q+'"'; if(!prods.length)showState('empty',q);else showState(''); });
+    });
+  } else {
+    apiGet('products', {'searchCriteria[pageSize]':'40','searchCriteria[sortOrders][0][field]':'updated_at','searchCriteria[sortOrders][0][direction]':'DESC'}).then(function(data){
+      var prods = data.items || [];
+      loadStock(prods).then(function(){ render(prods); setStatus('ok','Συνδεδεμένο - '+(data.total_count||0)+' προϊόντα'); document.getElementById('ri').style.display='none'; showState(''); });
+    }).catch(function(e){ setStatus('err','Σφάλμα: '+e.message); showState('err',e.message); });
+  }
 }
-function render(prods){
-  var g=document.getElementById('pg');g.innerHTML='';
+
+function loadStock(prods) {
+  var promises = prods.slice(0,30).map(function(p){
+    return apiGet('stockItems/'+encodeURIComponent(p.sku)).then(function(s){ p._q=s.qty; p._s=s.is_in_stock; }).catch(function(){ p._q=null; p._s=null; });
+  });
+  return Promise.all(promises);
+}
+
+function stockInfo(p) {
+  if(p._q==null) return p._s===false?{c:'out',l:'Εκτός stock'}:{c:'in',l:'Διαθέσιμο'};
+  if(p._q<=0) return {c:'out',l:'Εκτός stock'};
+  if(p._q<5) return {c:'low',l:p._q+' τεμ.'};
+  return {c:'in',l:Math.floor(p._q)+' τεμ.'};
+}
+
+function render(prods) {
+  var g = document.getElementById('pg'); g.innerHTML = '';
   prods.forEach(function(p){
-    var inB=basket.find(function(b){return b.sku===p.sku;}),s=si2(p),c=document.createElement('div');
-    c.className='card'+(inB?' added':'');c.dataset.sku=p.sku;
-    c.innerHTML='<div class="sku">'+p.sku+'</div><div class="name">'+p.name+'</div><div class="footer"><span class="badge '+s.c+'">'+s.l+'</span><button class="abtn'+(inB?' added':'')+'" onclick="tog(''+p.sku+'',''+p.name.replace(/'/g,"\'")+"',event)">"+(inB?'✓ Στη λίστα':'+ Λίστα')+'</button></div>';
+    var inB = basket.find(function(b){return b.sku===p.sku;}), s = stockInfo(p);
+    var c = document.createElement('div'); c.className='card'+(inB?' added':''); c.dataset.sku=p.sku;
+    var safeName = p.name.replace(/'/g,'&apos;');
+    c.innerHTML = '<div class="sku">'+p.sku+'</div><div class="name">'+p.name+'</div><div class="cf"><span class="badge '+s.c+'">'+s.l+'</span><button class="abtn'+(inB?' added':'')+'" onclick="tog(''+p.sku+'',''+safeName+'',event)">'+(inB?'Στη λίστα':'+ Λίστα')+'</button></div>';
     g.appendChild(c);
   });
 }
-function show(t,m){
+
+function showState(t,m) {
   var e=document.getElementById('sv');
-  if(t==='loading'){e.innerHTML='<div class="sv"><div class="spin2"></div><div>Φόρτωση...</div></div>';document.getElementById('pg').innerHTML='';}
+  if(t==='loading'){e.innerHTML='<div class="sv"><div class="sp"></div><div>Φόρτωση...</div></div>';document.getElementById('pg').innerHTML='';}
   else if(t==='empty')e.innerHTML='<div class="sv"><div style="font-size:40px;margin-bottom:12px">🔍</div><div>Δεν βρέθηκαν για "'+m+'"</div></div>';
   else if(t==='err')e.innerHTML='<div class="sv"><div style="font-size:40px;margin-bottom:12px">⚠️</div><div>Σφάλμα σύνδεσης</div><br><button class="abtn" onclick="load()">Επανάληψη</button></div>';
   else e.innerHTML='';
 }
-document.getElementById('si').addEventListener('input',function(e){clearTimeout(st);st=setTimeout(function(){load(e.target.value);},500);});
-function tog(sku,name,e){
+
+document.getElementById('si').addEventListener('input', function(e){ clearTimeout(searchTimer); searchTimer=setTimeout(function(){load(e.target.value);},500); });
+
+function tog(sku, name, e) {
   e.stopPropagation();
   var i=basket.findIndex(function(b){return b.sku===sku;});
-  if(i>=0){basket.splice(i,1);toast2('Αφαιρέθηκε');}else{basket.push({sku:sku,name:name,qty:1});toast2('Προστέθηκε ✓');}
-  save();ufab();
+  if(i>=0){basket.splice(i,1);showToast('Αφαιρέθηκε');}else{basket.push({sku:sku,name:name,qty:1});showToast('Προστέθηκε');}
+  saveBs(); updateFab();
   var c=document.querySelector('.card[data-sku="'+sku+'"]');
-  if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'✓ Στη λίστα':'+ Λίστα';}
+  if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'Στη λίστα':'+ Λίστα';}
 }
-function save(){localStorage.setItem('b',JSON.stringify(basket));}
-function ufab(){var f=document.getElementById('fab');f.classList.toggle('hidden',basket.length===0);document.getElementById('bc').textContent=basket.length;}
-function openB(){rpi();document.getElementById('panel').classList.add('open');}
+function saveBs(){localStorage.setItem('b',JSON.stringify(basket));}
+function updateFab(){var f=document.getElementById('fab');f.classList.toggle('hidden',basket.length===0);document.getElementById('bcount').textContent=basket.length;}
+function openB(){renderBasket();document.getElementById('panel').classList.add('open');}
 function closeB(){document.getElementById('panel').classList.remove('open');}
-function rpi(){
+function renderBasket(){
   var e=document.getElementById('pi');
-  if(!basket.length){e.innerHTML='<div class="sv" style="padding:30px"><div style="font-size:40px">🛒</div><div>Άδεια λίστα</div></div>';return;}
-  e.innerHTML=basket.map(function(item,i){return '<div class="pitem"><div class="pname"><div>'+item.name+'</div><div class="psku">'+item.sku+'</div></div><div class="qc"><button class="qbtn" onclick="cq('+i+',-1)">−</button><span class="qn">'+item.qty+'</span><button class="qbtn" onclick="cq('+i+',1)">+</button></div><button class="rbtn" onclick="ri2('+i+')">✕</button></div>';}).join('');
+  if(!basket.length){e.innerHTML='<div class="sv" style="padding:30px">Αδεια λιστα</div>';return;}
+  e.innerHTML=basket.map(function(item,i){return '<div class="pitem"><div class="pn"><div>'+item.name+'</div><div class="ps">'+item.sku+'</div></div><div class="qc"><button class="qb" onclick="cq('+i+',-1)">-</button><span class="qn">'+item.qty+'</span><button class="qb" onclick="cq('+i+',1)">+</button></div><button class="rb" onclick="ri('+i+')">x</button></div>';}).join('');
 }
-function cq(i,d){basket[i].qty=Math.max(1,basket[i].qty+d);save();rpi();}
-function ri2(i){var sku=basket[i].sku;basket.splice(i,1);save();ufab();rpi();var c=document.querySelector('.card[data-sku="'+sku+'"]');if(c){c.classList.remove('added');var b=c.querySelector('.abtn');b.className='abtn';b.textContent='+ Λίστα';}}
-function copyL(){var t=basket.map(function(i){return i.qty+'x '+i.sku+' - '+i.name;}).join('\n');navigator.clipboard.writeText(t).then(function(){toast2('Αντιγράφηκε ✓');});}
-function sendWA(){var t='\uD83D\uDED2 *Παραγγελία Κανελλάκης*\n\n'+basket.map(function(i){return '• '+i.qty+'x '+i.sku+' - '+i.name;}).join('\n');window.open('https://wa.me/?text='+encodeURIComponent(t));}
-function toast2(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}
-ufab();load();
+function cq(i,d){basket[i].qty=Math.max(1,basket[i].qty+d);saveBs();renderBasket();}
+function ri(i){var sku=basket[i].sku;basket.splice(i,1);saveBs();updateFab();renderBasket();var c=document.querySelector('.card[data-sku="'+sku+'"]');if(c){c.classList.remove('added');var b=c.querySelector('.abtn');b.className='abtn';b.textContent='+ Λίστα';}}
+function copyL(){var t=basket.map(function(i){return i.qty+'x '+i.sku+' - '+i.name;}).join('\n');navigator.clipboard.writeText(t).then(function(){showToast('Αντιγράφηκε');});}
+function sendWA(){var t='Παραγγελία Κανελλάκης\n\n'+basket.map(function(i){return i.qty+'x '+i.sku+' - '+i.name;}).join('\n');window.open('https://wa.me/?text='+encodeURIComponent(t));}
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}
+updateFab();
+load();
 </script>
 </body>
 </html>

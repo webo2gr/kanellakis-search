@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Αναζήτηση Προϊόντων - Κανελλάκης</title>
+<title>Kanellakis Search</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 :root{--bg:#f5f4f0;--surface:#fff;--border:#e0ddd8;--text:#1a1917;--muted:#6b6860;--accent:#c8390a;--green:#1a7a4a;--gl:#edf7f2;--yellow:#b45309;--yl:#fef9ee;--rl:#fdf1ee;--r:8px}
@@ -15,7 +15,7 @@ header{background:var(--text);color:#fff;padding:14px 20px;display:flex;align-it
 .sw{flex:1;max-width:500px;margin:0 auto;position:relative}
 #si{width:100%;padding:10px 16px 10px 40px;border:none;border-radius:var(--r);font-family:'IBM Plex Sans',sans-serif;font-size:15px;background:rgba(255,255,255,.15);color:#fff;outline:none}
 #si::placeholder{color:rgba(255,255,255,.5)}
-.si{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
+.sico{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
 .cnt{padding:16px;max-width:900px;margin:0 auto}
 .sb{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;font-size:13px;color:var(--muted)}
 .d{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
@@ -62,122 +62,28 @@ header{background:var(--text);color:#fff;padding:14px 20px;display:flex;align-it
 </head>
 <body>
 <header>
-  <div class="logo">Κανελλάκης<span>.</span></div>
+  <div class="logo">Kanellakis<span>.</span></div>
   <div class="sw">
-    <svg class="si" width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input type="search" id="si" placeholder="Κωδικός, περιγραφή..." autocomplete="off">
+    <svg class="sico" width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="si" placeholder="Search..." autocomplete="off">
   </div>
 </header>
 <div class="cnt">
-  <div class="sb"><div class="d spin" id="sd"></div><span id="st">Σύνδεση...</span></div>
+  <div class="sb"><div class="d spin" id="sd"></div><span id="st">Connecting...</span></div>
   <div id="ri" class="ri" style="display:none"></div>
   <div class="grid" id="pg"></div>
   <div id="sv"></div>
 </div>
-<button class="fab hidden" id="fab" onclick="openB()">🛒 Λίστα <span class="bc" id="bcount">0</span></button>
+<button class="fab hidden" id="fab" onclick="openB()">Cart <span class="bc" id="bcount">0</span></button>
 <div class="panel" id="panel">
-  <div class="ph"><h2>📋 Λίστα Παραγγελίας</h2><button class="xb" onclick="closeB()">x</button></div>
+  <div class="ph"><h2>Order List</h2><button class="xb" onclick="closeB()">x</button></div>
   <div class="pi" id="pi"></div>
-  <div class="pf"><button class="cbtn" onclick="copyL()">Αντιγραφη</button><button class="sbtn" onclick="sendWA()">WhatsApp</button></div>
+  <div class="pf">
+    <button class="cbtn" onclick="copyL()">Copy</button>
+    <button class="sbtn" onclick="sendWA()">WhatsApp</button>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
-<script type="text/javascript">
-var APIBASE = 'https://kanellakis-search-6bgfmfn6b-webo2grs-projects.vercel.app/api/proxy';
-var basket = JSON.parse(localStorage.getItem('b') || '[]');
-var searchTimer = null;
-
-function apiGet(ep, params) {
-  var url = new URL(APIBASE);
-  url.searchParams.set('endpoint', ep);
-  if (params) { Object.keys(params).forEach(function(k){ url.searchParams.set(k, params[k]); }); }
-  return fetch(url.toString()).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
-}
-
-function setStatus(cls, txt) {
-  document.getElementById('sd').className = 'd ' + cls;
-  document.getElementById('st').textContent = txt;
-}
-
-function load(q) {
-  setStatus('spin', 'Φόρτωση...');
-  showState('loading');
-  var p1, p2;
-  if (q && q.trim()) {
-    p1 = apiGet('products', {'searchCriteria[filterGroups][0][filters][0][field]':'name','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'30'});
-    p2 = apiGet('products', {'searchCriteria[filterGroups][0][filters][0][field]':'sku','searchCriteria[filterGroups][0][filters][0][value]':'%'+q+'%','searchCriteria[filterGroups][0][filters][0][conditionType]':'like','searchCriteria[pageSize]':'10'});
-    Promise.allSettled([p1,p2]).then(function(results) {
-      var seen = new Set();
-      var prods = [];
-      results.forEach(function(r){ if(r.status==='fulfilled'&&r.value.items){ r.value.items.forEach(function(p){ if(!seen.has(p.id)){seen.add(p.id);prods.push(p);} }); } });
-      loadStock(prods).then(function(){ render(prods); setStatus('ok',prods.length+' αποτελέσματα'); document.getElementById('ri').style.display=prods.length?'block':'none'; document.getElementById('ri').textContent=prods.length+' αποτελέσματα για "'+q+'"'; if(!prods.length)showState('empty',q);else showState(''); });
-    });
-  } else {
-    apiGet('products', {'searchCriteria[pageSize]':'40','searchCriteria[sortOrders][0][field]':'updated_at','searchCriteria[sortOrders][0][direction]':'DESC'}).then(function(data){
-      var prods = data.items || [];
-      loadStock(prods).then(function(){ render(prods); setStatus('ok','Συνδεδεμένο - '+(data.total_count||0)+' προϊόντα'); document.getElementById('ri').style.display='none'; showState(''); });
-    }).catch(function(e){ setStatus('err','Σφάλμα: '+e.message); showState('err',e.message); });
-  }
-}
-
-function loadStock(prods) {
-  var promises = prods.slice(0,30).map(function(p){
-    return apiGet('stockItems/'+encodeURIComponent(p.sku)).then(function(s){ p._q=s.qty; p._s=s.is_in_stock; }).catch(function(){ p._q=null; p._s=null; });
-  });
-  return Promise.all(promises);
-}
-
-function stockInfo(p) {
-  if(p._q==null) return p._s===false?{c:'out',l:'Εκτός stock'}:{c:'in',l:'Διαθέσιμο'};
-  if(p._q<=0) return {c:'out',l:'Εκτός stock'};
-  if(p._q<5) return {c:'low',l:p._q+' τεμ.'};
-  return {c:'in',l:Math.floor(p._q)+' τεμ.'};
-}
-
-function render(prods) {
-  var g = document.getElementById('pg'); g.innerHTML = '';
-  prods.forEach(function(p){
-    var inB = basket.find(function(b){return b.sku===p.sku;}), s = stockInfo(p);
-    var c = document.createElement('div'); c.className='card'+(inB?' added':''); c.dataset.sku=p.sku;
-    var safeName = p.name.replace(/'/g,'&apos;');
-    c.innerHTML = '<div class="sku">'+p.sku+'</div><div class="name">'+p.name+'</div><div class="cf"><span class="badge '+s.c+'">'+s.l+'</span><button class="abtn'+(inB?' added':'')+'" onclick="tog(''+p.sku+'',''+safeName+'',event)">'+(inB?'Στη λίστα':'+ Λίστα')+'</button></div>';
-    g.appendChild(c);
-  });
-}
-
-function showState(t,m) {
-  var e=document.getElementById('sv');
-  if(t==='loading'){e.innerHTML='<div class="sv"><div class="sp"></div><div>Φόρτωση...</div></div>';document.getElementById('pg').innerHTML='';}
-  else if(t==='empty')e.innerHTML='<div class="sv"><div style="font-size:40px;margin-bottom:12px">🔍</div><div>Δεν βρέθηκαν για "'+m+'"</div></div>';
-  else if(t==='err')e.innerHTML='<div class="sv"><div style="font-size:40px;margin-bottom:12px">⚠️</div><div>Σφάλμα σύνδεσης</div><br><button class="abtn" onclick="load()">Επανάληψη</button></div>';
-  else e.innerHTML='';
-}
-
-document.getElementById('si').addEventListener('input', function(e){ clearTimeout(searchTimer); searchTimer=setTimeout(function(){load(e.target.value);},500); });
-
-function tog(sku, name, e) {
-  e.stopPropagation();
-  var i=basket.findIndex(function(b){return b.sku===sku;});
-  if(i>=0){basket.splice(i,1);showToast('Αφαιρέθηκε');}else{basket.push({sku:sku,name:name,qty:1});showToast('Προστέθηκε');}
-  saveBs(); updateFab();
-  var c=document.querySelector('.card[data-sku="'+sku+'"]');
-  if(c){var inB=basket.find(function(b){return b.sku===sku;});c.classList.toggle('added',!!inB);var btn=c.querySelector('.abtn');btn.className='abtn'+(inB?' added':'');btn.textContent=inB?'Στη λίστα':'+ Λίστα';}
-}
-function saveBs(){localStorage.setItem('b',JSON.stringify(basket));}
-function updateFab(){var f=document.getElementById('fab');f.classList.toggle('hidden',basket.length===0);document.getElementById('bcount').textContent=basket.length;}
-function openB(){renderBasket();document.getElementById('panel').classList.add('open');}
-function closeB(){document.getElementById('panel').classList.remove('open');}
-function renderBasket(){
-  var e=document.getElementById('pi');
-  if(!basket.length){e.innerHTML='<div class="sv" style="padding:30px">Αδεια λιστα</div>';return;}
-  e.innerHTML=basket.map(function(item,i){return '<div class="pitem"><div class="pn"><div>'+item.name+'</div><div class="ps">'+item.sku+'</div></div><div class="qc"><button class="qb" onclick="cq('+i+',-1)">-</button><span class="qn">'+item.qty+'</span><button class="qb" onclick="cq('+i+',1)">+</button></div><button class="rb" onclick="ri('+i+')">x</button></div>';}).join('');
-}
-function cq(i,d){basket[i].qty=Math.max(1,basket[i].qty+d);saveBs();renderBasket();}
-function ri(i){var sku=basket[i].sku;basket.splice(i,1);saveBs();updateFab();renderBasket();var c=document.querySelector('.card[data-sku="'+sku+'"]');if(c){c.classList.remove('added');var b=c.querySelector('.abtn');b.className='abtn';b.textContent='+ Λίστα';}}
-function copyL(){var t=basket.map(function(i){return i.qty+'x '+i.sku+' - '+i.name;}).join('\n');navigator.clipboard.writeText(t).then(function(){showToast('Αντιγράφηκε');});}
-function sendWA(){var t='Παραγγελία Κανελλάκης\n\n'+basket.map(function(i){return i.qty+'x '+i.sku+' - '+i.name;}).join('\n');window.open('https://wa.me/?text='+encodeURIComponent(t));}
-function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2000);}
-updateFab();
-load();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
